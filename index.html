@@ -3,64 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>간편 근무표 관리</title>
+    <title>비대면 전자계약 시스템</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        body { font-family: 'Suit', sans-serif; background-color: #f5f7fa; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .app-container { max-width: 800px; width: 100%; }
-
-        /* 메인 카드 스타일 */
-        .scheduler-card {
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap');
+        
+        body { background-color: #f3f4f6; font-family: 'Noto Sans KR', sans-serif; }
+        
+        /* 실제 계약서 종이 느낌 (A4 비율) */
+        .contract-paper {
+            font-family: 'Noto Serif KR', serif; /* 명조체 */
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
+            color: #333;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            margin: 0 auto;
+            position: relative;
+            box-sizing: border-box;
         }
 
-        /* 헤더 */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
-        .header h1 { margin: 0; font-size: 24px; color: #2c3e50; }
-        .date-label { color: #7f8c8d; font-size: 14px; }
-
-        /* 입력 폼 */
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
-        .input-group input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex-grow: 1; }
-        .btn-add { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-add:hover { background: #2980b9; }
-
-        /* 근무표 테이블 */
-        .table-container { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
-        th { background-color: #ecf0f1; color: #2c3e50; padding: 12px; font-weight: 600; border: 1px solid #e0e0e0; }
-        td { border: 1px solid #e0e0e0; padding: 0; height: 50px; vertical-align: middle; }
+        /* 계약서 내부 테이블 스타일 */
+        .contract-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px; }
+        .contract-table th, .contract-table td { border: 1px solid #444; padding: 6px 10px; }
+        .contract-table th { background-color: #f0f0f0; text-align: center; font-weight: bold; width: 100px; }
         
-        /* 근무자 이름 칸 */
-        .worker-name { font-weight: bold; background: #fff; color: #333; padding: 10px; }
-        .delete-btn { font-size: 10px; color: red; cursor: pointer; margin-left: 5px; border: 1px solid #eee; padding: 2px 5px; border-radius: 4px; }
-
-        /* 근무 셀 (클릭 가능) */
-        .shift-cell { cursor: pointer; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: 0.2s; }
-        .shift-cell:hover { opacity: 0.8; }
-
-        /* 근무 타입별 색상 */
-        .type-day { background-color: #e3f2fd; color: #1976d2; } /* 주간 */
-        .type-night { background-color: #e8eaf6; color: #3f51b5; } /* 야간 */
-        .type-off { background-color: #ffebee; color: #c62828; } /* 휴무 */
-        .type-none { background-color: #fff; color: #ddd; } /* 미정 */
-
-        /* PDF 버튼 */
-        .pdf-btn { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .pdf-btn:hover { background: #219150; }
-
-        /* 안내 문구 */
-        .guide { font-size: 12px; color: #999; text-align: right; margin-top: 5px; }
+        .title { text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 30px; text-decoration: underline; text-underline-offset: 5px; }
+        .section-title { font-size: 16px; font-weight: bold; margin-bottom: 5px; margin-top: 15px; }
+        
+        /* 인적사항 서명란 */
+        .sign-box { display: flex; justify-content: space-between; margin-top: 30px; }
+        .party-box { width: 48%; }
+        .party-row { display: flex; margin-bottom: 5px; font-size: 13px; }
+        .party-label { width: 60px; font-weight: bold; }
+        
+        /* 숨김 처리 (PDF 생성용) */
+        .hidden-screen { position: absolute; left: -9999px; top: -9999px; }
     </style>
 </head>
 <body>
@@ -72,120 +58,245 @@
         const { jsPDF } = window.jspdf;
 
         function App() {
-            const contentRef = useRef(null);
-            const [workers, setWorkers] = useState([
-                { id: 1, name: "김철수", shifts: ["D", "D", "N", "N", "O", "O", "D"] },
-                { id: 2, name: "이영희", shifts: ["O", "D", "D", "D", "D", "O", "O"] }
-            ]);
-            const [newName, setNewName] = useState("");
+            const [step, setStep] = useState(1); // 1:입력 -> 2:결제 -> 3:완료
+            const [payMethod, setPayMethod] = useState(null);
+            const contractRef = useRef(null);
 
-            const days = ["월", "화", "수", "목", "금", "토", "일"];
-            
-            // 근무 타입 순환: 주간(D) -> 야간(N) -> 휴무(O) -> 없음(빈칸)
-            const shiftTypes = {
-                'D': { label: '주간', class: 'type-day' },
-                'N': { label: '야간', class: 'type-night' },
-                'O': { label: '휴무', class: 'type-off' },
-                '':  { label: '-', class: 'type-none' }
+            // 입력 데이터 상태
+            const [formData, setFormData] = useState({
+                address: "서울시 강남구 테헤란로 123, 101동 202호",
+                type: "아파트",
+                area: "84.5",
+                deposit: "500,000,000",
+                contractVal: "50,000,000",
+                rent: "0",
+                startDate: "2023-12-01",
+                endDate: "2025-11-30",
+                payDate: "2023-11-30",
+                lessorName: "김임대",
+                lessorPhone: "010-1111-2222",
+                lessorId: "700101-1******",
+                lesseeName: "",
+                lesseePhone: "",
+                lesseeId: ""
+            });
+
+            const handleChange = (e) => {
+                const { name, value } = e.target;
+                setFormData({ ...formData, [name]: value });
             };
 
-            // 근무자 추가
-            const addWorker = () => {
-                if (!newName) return;
-                const newId = workers.length > 0 ? Math.max(...workers.map(w => w.id)) + 1 : 1;
-                setWorkers([...workers, { id: newId, name: newName, shifts: Array(7).fill("") }]);
-                setNewName("");
-            };
-
-            // 근무자 삭제
-            const removeWorker = (id) => {
-                setWorkers(workers.filter(w => w.id !== id));
-            };
-
-            // 근무 변경 (클릭 시 순환)
-            const toggleShift = (workerId, dayIndex) => {
-                const typeOrder = ["", "D", "N", "O"];
+            // PDF 생성 및 다운로드 함수
+            const generatePDF = async () => {
+                const element = contractRef.current;
                 
-                setWorkers(workers.map(worker => {
-                    if (worker.id === workerId) {
-                        const currentShift = worker.shifts[dayIndex];
-                        const nextIndex = (typeOrder.indexOf(currentShift) + 1) % typeOrder.length;
-                        const newShifts = [...worker.shifts];
-                        newShifts[dayIndex] = typeOrder[nextIndex];
-                        return { ...worker, shifts: newShifts };
-                    }
-                    return worker;
-                }));
-            };
-
-            // PDF 저장
-            const handleDownloadPdf = async () => {
-                const element = contentRef.current;
-                if (!element) return;
-
+                // PDF 생성 중엔 화면에 보이게 잠깐 처리 (hidden 클래스 제거 효과)
+                element.style.position = 'relative';
+                element.style.left = '0';
+                
                 const canvas = await html2canvas(element, { scale: 2 });
                 const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF('l', 'mm', 'a4'); // 가로(Landscape) 모드
+                
+                const pdf = new jsPDF('p', 'mm', 'a4');
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
+                
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save('work_schedule.pdf');
+                pdf.save(`${formData.lesseeName}_임대차계약서.pdf`);
+
+                // 다시 숨김
+                element.style.position = 'absolute';
+                element.style.left = '-9999px';
+            };
+
+            const handleCardRequest = () => {
+                alert(`[알림] ${formData.lesseePhone} 번호로\n카드 결제 링크(PG사)가 문자로 발송되었습니다.\n\n결제가 확인되면 다음 단계로 진행됩니다.`);
+                // 실제로는 여기서 백엔드 API 호출 -> 문자 발송 로직
+                setStep(3); // 시뮬레이션을 위해 바로 완료 단계로 이동
             };
 
             return (
-                <div className="app-container">
-                    <div className="input-group">
-                        <input 
-                            type="text" 
-                            placeholder="근무자 이름 입력 (예: 박민수)" 
-                            value={newName}
-                            onChange={(e) => setNewName(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && addWorker()}
-                        />
-                        <button className="btn-add" onClick={addWorker}>추가</button>
-                    </div>
-
-                    {/* PDF로 저장될 영역 */}
-                    <div className="scheduler-card" ref={contentRef}>
-                        <div className="header">
-                            <h1>📅 주간 근무표</h1>
-                            <span className="date-label">2025년 11월 4주차</span>
+                <div className="min-h-screen flex flex-col items-center py-10">
+                    
+                    {/* 상단 네비게이션 */}
+                    <div className="w-full max-w-2xl bg-white p-6 rounded-xl shadow-lg mb-8">
+                        <div className="flex justify-between mb-4 border-b pb-4">
+                            <h2 className="text-2xl font-bold text-gray-800">🏠 비대면 전자계약 작성</h2>
+                            <span className="text-blue-600 font-bold self-center">
+                                {step === 1 ? "1. 정보입력" : step === 2 ? "2. 수수료 결제" : "3. 계약서 생성"}
+                            </span>
                         </div>
 
-                        <div className="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th style={{width: '100px'}}>이름</th>
-                                        {days.map(day => <th key={day}>{day}</th>)}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {workers.map(worker => (
-                                        <tr key={worker.id}>
-                                            <td className="worker-name">
-                                                {worker.name}
-                                                <span className="delete-btn" onClick={() => removeWorker(worker.id)}>x</span>
-                                            </td>
-                                            {worker.shifts.map((shift, idx) => (
-                                                <td key={idx} onClick={() => toggleShift(worker.id, idx)}>
-                                                    <div className={`shift-cell ${shiftTypes[shift]?.class || 'type-none'}`}>
-                                                        {shiftTypes[shift]?.label}
-                                                    </div>
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <p className="guide">* 칸을 클릭하면 [ 주간 → 야간 → 휴무 ] 순으로 변경됩니다.</p>
+                        {/* STEP 1: 정보 입력 폼 */}
+                        {step === 1 && (
+                            <div className="space-y-4">
+                                <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-700 mb-4">
+                                    💡 계약에 필요한 최소한의 정보를 입력해주세요.<br/>나머지 법적 조항은 표준 양식으로 자동 생성됩니다.
+                                </div>
+                                
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">임차인 성명 (본인)</label>
+                                        <input type="text" name="lesseeName" value={formData.lesseeName} onChange={handleChange} placeholder="예: 홍길동" className="w-full border p-3 rounded-lg focus:outline-blue-500" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">연락처</label>
+                                        <input type="text" name="lesseePhone" value={formData.lesseePhone} onChange={handleChange} placeholder="예: 010-1234-5678" className="w-full border p-3 rounded-lg focus:outline-blue-500" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">주민등록번호 (앞자리)</label>
+                                        <input type="text" name="lesseeId" value={formData.lesseeId} onChange={handleChange} placeholder="예: 900101" className="w-full border p-3 rounded-lg focus:outline-blue-500" />
+                                    </div>
+                                    
+                                    <div className="border-t pt-4 mt-2">
+                                        <p className="text-sm font-bold text-gray-500 mb-2">계약 부동산 정보 (확인용)</p>
+                                        <input type="text" value={formData.address} disabled className="w-full bg-gray-100 border p-3 rounded-lg text-gray-500" />
+                                    </div>
+                                </div>
+
+                                <button onClick={() => {
+                                    if(!formData.lesseeName) return alert('성명을 입력해주세요');
+                                    setStep(2);
+                                }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg mt-6 text-lg transition">
+                                    입력 완료 및 결제하기
+                                </button>
+                            </div>
+                        )}
+
+                        {/* STEP 2: 결제 선택 */}
+                        {step === 2 && (
+                            <div className="text-center">
+                                <h3 className="text-xl font-bold mb-2">계약서 작성 수수료 결제</h3>
+                                <p className="text-gray-500 mb-8">결제가 완료되면 전자계약서(PDF)가 즉시 발행됩니다.</p>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={() => setPayMethod('cash')} className={`p-6 border-2 rounded-xl flex flex-col items-center justify-center transition ${payMethod === 'cash' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-blue-300'}`}>
+                                        <span className="text-3xl mb-2">🏦</span>
+                                        <span className="font-bold">현금 이체</span>
+                                    </button>
+                                    <button onClick={() => setPayMethod('card')} className={`p-6 border-2 rounded-xl flex flex-col items-center justify-center transition ${payMethod === 'card' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-blue-300'}`}>
+                                        <span className="text-3xl mb-2">💳</span>
+                                        <span className="font-bold">카드 결제</span>
+                                    </button>
+                                </div>
+
+                                {/* 현금 선택 시 */}
+                                {payMethod === 'cash' && (
+                                    <div className="mt-6 bg-gray-100 p-4 rounded-lg text-left">
+                                        <p className="font-bold text-gray-800">입금 계좌 안내</p>
+                                        <p className="text-gray-600 mt-1">우리은행 1002-123-456789 (예금주: 전자계약)</p>
+                                        <button onClick={() => setStep(3)} className="w-full mt-4 bg-blue-600 text-white font-bold py-3 rounded-lg">입금 완료했습니다</button>
+                                    </div>
+                                )}
+
+                                {/* 카드 선택 시 */}
+                                {payMethod === 'card' && (
+                                    <div className="mt-6">
+                                        <button onClick={handleCardRequest} className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 rounded-lg shadow-md transition">
+                                            📲 알림톡으로 결제 링크 받기
+                                        </button>
+                                        <p className="text-xs text-gray-400 mt-2">* 문자로 전송된 링크를 통해 결제를 진행해주세요.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* STEP 3: 완료 및 PDF/모두싸인 */}
+                        {step === 3 && (
+                            <div className="text-center">
+                                <div className="text-5xl mb-4">✅</div>
+                                <h3 className="text-xl font-bold mb-2">계약서 작성이 완료되었습니다!</h3>
+                                <p className="text-gray-600 mb-6">아래 버튼을 눌러 PDF를 저장하고,<br/>모두싸인에서 최종 서명을 진행하세요.</p>
+                                
+                                <button onClick={generatePDF} className="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-4 rounded-lg mb-3 flex items-center justify-center gap-2">
+                                    📄 계약서 PDF 다운로드
+                                </button>
+                                
+                                <a href="https://www.modusign.co.kr/" target="_blank" className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg flex items-center justify-center gap-2">
+                                    ✍️ 모두싸인으로 이동하여 서명하기
+                                </a>
+                                <p className="text-xs text-gray-400 mt-2">* 모두싸인 로그인 후 다운로드 받은 PDF를 업로드하세요.</p>
+                            </div>
+                        )}
                     </div>
 
-                    <button className="pdf-btn" onClick={handleDownloadPdf}>
-                        📄 근무표 PDF로 저장하기
-                    </button>
+                    {/* ========================================= */}
+                    {/* 실제 PDF로 변환될 계약서 양식 (화면엔 안보임) */}
+                    {/* ========================================= */}
+                    <div ref={contractRef} className="contract-paper hidden-screen">
+                        <h1 className="title">부동산 임대차 계약서</h1>
+                        
+                        <div className="section-title">1. 부동산의 표시</div>
+                        <table className="contract-table">
+                            <tbody>
+                                <tr>
+                                    <th>소재지</th>
+                                    <td colSpan="3">{formData.address}</td>
+                                </tr>
+                                <tr>
+                                    <th>토지</th>
+                                    <td>대지권 비율 해당사항 없음</td>
+                                    <th>건물</th>
+                                    <td>구조: {formData.type} / 면적: {formData.area}㎡</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div className="section-title">2. 계약 내용</div>
+                        <div className="mb-2 text-sm">임대인과 임차인은 아래와 같이 임대차 계약을 체결한다.</div>
+                        <table className="contract-table">
+                            <tbody>
+                                <tr>
+                                    <th>보증금</th>
+                                    <td colSpan="3">금 {formData.deposit}원 (￦{formData.deposit})</td>
+                                </tr>
+                                <tr>
+                                    <th>계약금</th>
+                                    <td colSpan="3">금 {formData.contractVal}원 은 계약 시에 지불하고 영수함.</td>
+                                </tr>
+                                <tr>
+                                    <th>차임(월세)</th>
+                                    <td colSpan="3">금 {formData.rent}원 (매월 {formData.payDate.split('-')[2]}일에 지불)</td>
+                                </tr>
+                                <tr>
+                                    <th>임대차기간</th>
+                                    <td colSpan="3">{formData.startDate} 부터 {formData.endDate} 까지 (24개월)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div className="section-title">3. 특약 사항</div>
+                        <div className="border border-gray-400 p-4 text-sm h-32 mb-4 leading-relaxed">
+                            1. 현 시설 상태에서의 임대차 계약이며, 임차인은 현장 답사 후 계약을 체결함.<br/>
+                            2. 임차인은 임대인의 동의 없이 구조 변경 및 전대할 수 없다.<br/>
+                            3. 기타 명시되지 않은 사항은 주택임대차보호법 및 일반 관례에 따른다.<br/>
+                            4. 본 계약은 비대면 전자계약 방식으로 진행되었음을 확인한다.
+                        </div>
+
+                        <div className="section-title">4. 인적 사항</div>
+                        <div className="sign-box">
+                            <div className="party-box">
+                                <div className="text-center font-bold mb-2 text-lg">[임대인]</div>
+                                <div className="party-row"><span className="party-label">주소</span><span>{formData.address}</span></div>
+                                <div className="party-row"><span className="party-label">주민번호</span><span>{formData.lessorId}</span></div>
+                                <div className="party-row"><span className="party-label">전화</span><span>{formData.lessorPhone}</span></div>
+                                <div className="party-row"><span className="party-label">성명</span><span>{formData.lessorName} (인)</span></div>
+                            </div>
+                            <div className="party-box">
+                                <div className="text-center font-bold mb-2 text-lg">[임차인]</div>
+                                <div className="party-row"><span className="party-label">주소</span><span>입주 시 확정</span></div>
+                                <div className="party-row"><span className="party-label">주민번호</span><span>{formData.lesseeId}-*******</span></div>
+                                <div className="party-row"><span className="party-label">전화</span><span>{formData.lesseePhone}</span></div>
+                                <div className="party-row"><span className="party-label">성명</span><span>{formData.lesseeName} (인)</span></div>
+                            </div>
+                        </div>
+                        
+                        <div className="mt-10 text-center text-sm text-gray-500">
+                            본 계약서는 전자 서명을 위해 작성된 초안입니다.<br/>
+                            작성일자: {new Date().toLocaleDateString()}
+                        </div>
+                    </div>
+
                 </div>
             );
         }
