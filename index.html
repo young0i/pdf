@@ -15,13 +15,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
+        /* [핵심 수정] body 배경색을 흰색으로 변경 */
         body { 
-            background-color: #f3f4f6; 
+            background-color: #ffffff; 
             font-family: 'Noto Sans KR', sans-serif; 
             overflow-x: hidden; /* 가로 스크롤 방지 */
         }
         
-        /* [핵심 수정] PDF 템플릿 영역: 화면 밖으로 완전히 이동 */
+        /* PDF 템플릿 영역: 화면 밖으로 완전히 이동 (이전 수정과 동일하게 유지) */
         #pdf-template-layer {
             position: absolute; 
             top: 0;
@@ -36,7 +37,7 @@
             color: #000;
         }
 
-        /* 계약서 스타일 (PDF 내부) */
+        /* 계약서 스타일 (PDF 내부용 - 변동 없음) */
         .doc-title { text-align: center; font-size: 24pt; font-weight: bold; margin-bottom: 30px; text-decoration: underline; text-underline-offset: 8px; }
         .doc-section { margin-top: 20px; margin-bottom: 8px; font-weight: bold; font-size: 11pt; border-left: 4px solid #000; padding-left: 8px; }
         .doc-table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-bottom: 15px; }
@@ -87,27 +88,20 @@
             const goNext = () => setStep(prev => prev + 1);
             const goBack = () => setStep(prev => prev - 1);
 
-            // ============================================
-            // 🚀 PDF 다운로드 (잘림 방지 로직 포함)
-            // ============================================
+            // PDF 다운로드 로직 (이전과 동일하게 유지)
             const handleDownloadPDF = async () => {
                 const input = document.getElementById('pdf-template-layer');
                 
                 try {
-                    // 1. 스크롤을 맨 위로 올려야 캡처가 정확함
                     window.scrollTo(0, 0);
-
-                    // 2. html2canvas 옵션 강화
                     const canvas = await html2canvas(input, { 
                         scale: 2, 
                         useCORS: true,
                         scrollY: 0, 
                         windowWidth: 1200 
                     });
-
                     const imgData = canvas.toDataURL('image/png');
                     
-                    // 3. A4 크기에 꽉 차게 강제 맞춤
                     const pdf = new jsPDF('p', 'mm', 'a4');
                     const pdfWidth = 210; 
                     const pdfHeight = 297;
@@ -125,7 +119,7 @@
             return (
                 <div className="min-h-screen flex flex-col items-center justify-center py-10 px-4 relative z-10">
                     
-                    {/* 메인 인터페이스 카드 (깔끔한 UI 유지) */}
+                    {/* 메인 인터페이스 카드 (이전과 동일하게 유지) */}
                     <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden relative z-20">
                         
                         <div className="bg-blue-600 p-6 text-center">
@@ -135,12 +129,11 @@
 
                         <div className="p-8">
                             
-                            {/* STEP 1: 입력 */}
+                            {/* STEP 1: 입력 필드 (이전과 동일하게 유지) */}
                             {step === 1 && (
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-800 mb-4">1. 부동산 및 임대인 정보</h2>
                                     <input type="text" name="address" value={data.address} onChange={handleChange} placeholder="소재지 (주소)" className="input-base" />
-                                    {/* ... (이전 입력 필드 유지) ... */}
                                     <div className="flex gap-2">
                                         <input type="text" name="buildingType" value={data.buildingType} onChange={handleChange} placeholder="용도" className="input-base" />
                                         <input type="number" name="area" value={data.area} onChange={handleChange} placeholder="면적(㎡)" className="input-base" />
@@ -176,7 +169,7 @@
                                 </div>
                             )}
 
-                            {/* STEP 2: 임차인 정보 */}
+                            {/* STEP 2: 임차인 정보 (이전과 동일하게 유지) */}
                             {step === 2 && (
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-800 mb-4">2. 임차인 정보</h2>
@@ -191,7 +184,7 @@
                                 </div>
                             )}
 
-                            {/* STEP 3: 미리보기 */}
+                            {/* STEP 3: 미리보기 (이전과 동일하게 유지) */}
                             {step === 3 && (
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-800 mb-2">3. 내용 확인</h2>
@@ -209,7 +202,7 @@
                                 </div>
                             )}
 
-                            {/* STEP 4: 결제 */}
+                            {/* STEP 4: 결제 (이전과 동일하게 유지) */}
                             {step === 4 && (
                                 <div className="text-center">
                                     <h2 className="text-xl font-bold text-gray-800 mb-6">4. 수수료 결제</h2>
@@ -227,7 +220,7 @@
                                 </div>
                             )}
 
-                            {/* STEP 5: 완료 및 다운로드 */}
+                            {/* STEP 5: 완료 및 다운로드 (이전과 동일하게 유지) */}
                             {step === 5 && (
                                 <div className="text-center">
                                     <div className="text-5xl mb-4">✅</div>
@@ -283,8 +276,8 @@
                             <div style={{flex:1, border:'1px solid #ccc', padding:'10px'}}>
                                 <div style={{fontWeight:'bold', marginBottom:'8px', fontSize:'11pt'}}>[임대인]</div>
                                 <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block'}}>주소:</span> {data.lessorAddress}</div>
-                                <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block')}>주민:</span> {data.lessorId}</div>
-                                <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block')}>전화:</span> {data.lessorPhone}</div>
+                                <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block'}}>주민:</span> {data.lessorId}</div>
+                                <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block'}}>전화:</span> {data.lessorPhone}</div>
                                 <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block'}}>성명:</span> {data.lessorName} (인)</div>
                                 <div style={{marginTop:'8px', background:'#eee', padding:'5px', fontSize:'9pt'}}>
                                     <strong>계좌:</strong> {data.bankName} {data.accountNum}
@@ -294,8 +287,8 @@
                                 <div style={{fontWeight:'bold', marginBottom:'8px', fontSize:'11pt'}}>[임차인]</div>
                                 <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block'}}>주소:</span> {data.lesseeAddress}</div>
                                 <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block'}}>주민:</span> {data.lesseeId}</div>
-                                <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block')}>전화:</span> {data.lesseePhone}</div>
-                                <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block')}>성명:</span> {data.lesseeName} (인)</div>
+                                <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block'}}>전화:</span> {data.lesseePhone}</div>
+                                <div style={{marginBottom:'4px', fontSize:'10pt'}}><span style={{fontWeight:'bold', width:'50px', display:'inline-block'}}>성명:</span> {data.lesseeName} (인)</div>
                             </div>
                         </div>
 
