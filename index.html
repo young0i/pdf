@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 홈페이지 & PDF</title>
+    <title>간편 근무표 관리</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -12,46 +12,55 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
-        .container { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 500px; }
-        
-        /* PDF로 저장될 카드 영역 */
-        .card {
+        body { font-family: 'Suit', sans-serif; background-color: #f5f7fa; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .app-container { max-width: 800px; width: 100%; }
+
+        /* 메인 카드 스타일 */
+        .scheduler-card {
             background: white;
-            width: 100%;
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            box-sizing: border-box;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             margin-bottom: 20px;
-            border: 1px solid #e0e0e0;
         }
-        
-        .header { padding-bottom: 15px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
-        .header h1 { font-size: 22px; margin: 0 0 5px 0; color: #222; }
-        .header .category { color: #8e8e8e; font-size: 13px; }
 
-        .info-row { display: flex; margin-bottom: 15px; align-items: flex-start; }
-        .icon { width: 20px; margin-right: 10px; text-align: center; font-size: 18px; }
-        .text-content h3 { margin: 0 0 4px 0; font-size: 15px; color: #333; }
-        .text-content p { margin: 0; font-size: 14px; color: #666; line-height: 1.5; }
-        
-        .naver-green { color: #03c75a; font-weight: bold; }
+        /* 헤더 */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .header h1 { margin: 0; font-size: 24px; color: #2c3e50; }
+        .date-label { color: #7f8c8d; font-size: 14px; }
 
-        /* 저장 버튼 */
-        .save-btn {
-            background-color: #03c75a;
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(3, 199, 90, 0.2);
-        }
-        .save-btn:hover { background-color: #02b150; }
+        /* 입력 폼 */
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
+        .input-group input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex-grow: 1; }
+        .btn-add { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-add:hover { background: #2980b9; }
+
+        /* 근무표 테이블 */
+        .table-container { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
+        th { background-color: #ecf0f1; color: #2c3e50; padding: 12px; font-weight: 600; border: 1px solid #e0e0e0; }
+        td { border: 1px solid #e0e0e0; padding: 0; height: 50px; vertical-align: middle; }
+        
+        /* 근무자 이름 칸 */
+        .worker-name { font-weight: bold; background: #fff; color: #333; padding: 10px; }
+        .delete-btn { font-size: 10px; color: red; cursor: pointer; margin-left: 5px; border: 1px solid #eee; padding: 2px 5px; border-radius: 4px; }
+
+        /* 근무 셀 (클릭 가능) */
+        .shift-cell { cursor: pointer; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: 0.2s; }
+        .shift-cell:hover { opacity: 0.8; }
+
+        /* 근무 타입별 색상 */
+        .type-day { background-color: #e3f2fd; color: #1976d2; } /* 주간 */
+        .type-night { background-color: #e8eaf6; color: #3f51b5; } /* 야간 */
+        .type-off { background-color: #ffebee; color: #c62828; } /* 휴무 */
+        .type-none { background-color: #fff; color: #ddd; } /* 미정 */
+
+        /* PDF 버튼 */
+        .pdf-btn { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .pdf-btn:hover { background: #219150; }
+
+        /* 안내 문구 */
+        .guide { font-size: 12px; color: #999; text-align: right; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -64,74 +73,118 @@
 
         function App() {
             const contentRef = useRef(null);
+            const [workers, setWorkers] = useState([
+                { id: 1, name: "김철수", shifts: ["D", "D", "N", "N", "O", "O", "D"] },
+                { id: 2, name: "이영희", shifts: ["O", "D", "D", "D", "D", "O", "O"] }
+            ]);
+            const [newName, setNewName] = useState("");
 
+            const days = ["월", "화", "수", "목", "금", "토", "일"];
+            
+            // 근무 타입 순환: 주간(D) -> 야간(N) -> 휴무(O) -> 없음(빈칸)
+            const shiftTypes = {
+                'D': { label: '주간', class: 'type-day' },
+                'N': { label: '야간', class: 'type-night' },
+                'O': { label: '휴무', class: 'type-off' },
+                '':  { label: '-', class: 'type-none' }
+            };
+
+            // 근무자 추가
+            const addWorker = () => {
+                if (!newName) return;
+                const newId = workers.length > 0 ? Math.max(...workers.map(w => w.id)) + 1 : 1;
+                setWorkers([...workers, { id: newId, name: newName, shifts: Array(7).fill("") }]);
+                setNewName("");
+            };
+
+            // 근무자 삭제
+            const removeWorker = (id) => {
+                setWorkers(workers.filter(w => w.id !== id));
+            };
+
+            // 근무 변경 (클릭 시 순환)
+            const toggleShift = (workerId, dayIndex) => {
+                const typeOrder = ["", "D", "N", "O"];
+                
+                setWorkers(workers.map(worker => {
+                    if (worker.id === workerId) {
+                        const currentShift = worker.shifts[dayIndex];
+                        const nextIndex = (typeOrder.indexOf(currentShift) + 1) % typeOrder.length;
+                        const newShifts = [...worker.shifts];
+                        newShifts[dayIndex] = typeOrder[nextIndex];
+                        return { ...worker, shifts: newShifts };
+                    }
+                    return worker;
+                }));
+            };
+
+            // PDF 저장
             const handleDownloadPdf = async () => {
                 const element = contentRef.current;
                 if (!element) return;
 
-                // 화면 캡처 (html2canvas)
-                const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                const canvas = await html2canvas(element, { scale: 2 });
                 const imgData = canvas.toDataURL('image/png');
-
-                // PDF 생성 (jsPDF)
-                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdf = new jsPDF('l', 'mm', 'a4'); // 가로(Landscape) 모드
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                
-                // 이미지 높이가 A4보다 길면 잘릴 수 있으므로 비율 조정 필요 시 추가 로직 가능
-                // 여기서는 간단하게 한 장에 넣음
+
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save('portfolio_card.pdf');
+                pdf.save('work_schedule.pdf');
             };
 
             return (
-                <div className="container">
-                    {/* 여기가 PDF로 변환되는 영역 */}
-                    <div className="card" ref={contentRef}>
-                        <div className="header">
-                            <h1>Young0i의 포트폴리오</h1>
-                            <span className="category">웹 개발자 / React & PDF 프로젝트</span>
-                        </div>
-
-                        <div className="info-row">
-                            <div className="icon">📍</div>
-                            <div className="text-content">
-                                <h3>위치</h3>
-                                <p>서울시 GitHub구 Pages동</p>
-                            </div>
-                        </div>
-
-                        <div className="info-row">
-                            <div className="icon">🕒</div>
-                            <div className="text-content">
-                                <h3>영업 시간</h3>
-                                <p>24시간 <span className="naver-green">영업 중</span></p>
-                            </div>
-                        </div>
-
-                        <div className="info-row">
-                            <div className="icon">📞</div>
-                            <div className="text-content">
-                                <h3>연락처</h3>
-                                <p>010-1234-5678</p>
-                            </div>
-                        </div>
-
-                        <div className="info-row">
-                            <div className="icon">📝</div>
-                            <div className="text-content">
-                                <h3>소개</h3>
-                                <p>
-                                    이 페이지는 React와 CDN 방식으로 만들어졌습니다.<br/>
-                                    하단 버튼을 누르면 이 카드 영역이<br/>
-                                    깔끔하게 <strong>PDF로 저장</strong>됩니다.
-                                </p>
-                            </div>
-                        </div>
+                <div className="app-container">
+                    <div className="input-group">
+                        <input 
+                            type="text" 
+                            placeholder="근무자 이름 입력 (예: 박민수)" 
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && addWorker()}
+                        />
+                        <button className="btn-add" onClick={addWorker}>추가</button>
                     </div>
 
-                    <button className="save-btn" onClick={handleDownloadPdf}>
-                        PDF로 저장하기
+                    {/* PDF로 저장될 영역 */}
+                    <div className="scheduler-card" ref={contentRef}>
+                        <div className="header">
+                            <h1>📅 주간 근무표</h1>
+                            <span className="date-label">2025년 11월 4주차</span>
+                        </div>
+
+                        <div className="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style={{width: '100px'}}>이름</th>
+                                        {days.map(day => <th key={day}>{day}</th>)}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {workers.map(worker => (
+                                        <tr key={worker.id}>
+                                            <td className="worker-name">
+                                                {worker.name}
+                                                <span className="delete-btn" onClick={() => removeWorker(worker.id)}>x</span>
+                                            </td>
+                                            {worker.shifts.map((shift, idx) => (
+                                                <td key={idx} onClick={() => toggleShift(worker.id, idx)}>
+                                                    <div className={`shift-cell ${shiftTypes[shift]?.class || 'type-none'}`}>
+                                                        {shiftTypes[shift]?.label}
+                                                    </div>
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <p className="guide">* 칸을 클릭하면 [ 주간 → 야간 → 휴무 ] 순으로 변경됩니다.</p>
+                    </div>
+
+                    <button className="pdf-btn" onClick={handleDownloadPdf}>
+                        📄 근무표 PDF로 저장하기
                     </button>
                 </div>
             );
