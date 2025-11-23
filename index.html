@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전자계약 통합 시스템</title>
+    <title>전자계약 시스템</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -15,49 +15,41 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        body { background-color: #f0f2f5; font-family: 'Noto Sans KR', sans-serif; -webkit-font-smoothing: antialiased; }
+        body { background-color: #f3f4f6; font-family: 'Noto Sans KR', sans-serif; }
         
-        /* === 중요: PDF 변환용 A4 고정 영역 (화면 뒤에 숨김) === */
-        #pdf-source-container {
-            position: absolute;
+        /* === [핵심] PDF 생성용 영역 : 화면 밖으로 완전히 보내버림 (절대 안보임) === */
+        #hidden-pdf-template {
+            position: fixed;
+            left: -5000px; /* 화면 왼쪽 저 멀리 보냄 */
             top: 0;
-            left: 0;
-            width: 210mm; /* A4 너비 */
-            min-height: 297mm; /* A4 높이 */
+            width: 210mm;
+            min-height: 297mm;
             background: white;
-            z-index: -9999; /* 화면 뒤로 숨김 */
             padding: 25mm;
             box-sizing: border-box;
-            font-family: 'Noto Serif KR', serif; /* 명조체 */
+            font-family: 'Noto Serif KR', serif;
             color: #000;
             line-height: 1.6;
+            z-index: -1;
         }
 
-        /* 계약서 내부 스타일 */
-        .doc-title { text-align: center; font-size: 24pt; font-weight: bold; margin-bottom: 30px; text-decoration: underline; text-underline-offset: 8px; }
-        .doc-section { margin-top: 20px; margin-bottom: 5px; font-weight: bold; font-size: 11pt; border-left: 5px solid #000; padding-left: 10px; }
-        .doc-table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-bottom: 15px; }
-        .doc-table th, .doc-table td { border: 1px solid #000; padding: 6px 10px; }
-        .doc-table th { background-color: #f8f8f8; text-align: center; font-weight: bold; width: 18%; }
-        .doc-text { font-size: 10pt; text-align: justify; line-height: 1.8; margin-bottom: 10px; }
+        /* 계약서 종이 스타일 (숨겨진 영역 내부) */
+        .doc-title { text-align: center; font-size: 26pt; font-weight: bold; margin-bottom: 40px; text-decoration: underline; text-underline-offset: 10px; }
+        .doc-section { margin-top: 25px; margin-bottom: 10px; font-weight: bold; font-size: 12pt; border-left: 5px solid #000; padding-left: 10px; }
+        .doc-table { width: 100%; border-collapse: collapse; font-size: 11pt; margin-bottom: 20px; }
+        .doc-table th, .doc-table td { border: 1px solid #000; padding: 8px 10px; }
+        .doc-table th { background-color: #f0f0f0; text-align: center; font-weight: bold; width: 20%; }
+        .doc-text { font-size: 11pt; text-align: justify; line-height: 1.8; margin-bottom: 10px; }
         
-        .sign-area { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; border-top: 2px solid #000; padding-top: 20px; }
-        .sign-row { display: flex; justify-content: space-between; font-size: 10pt; }
-        .sign-box { width: 48%; border: 1px solid #ccc; padding: 10px; }
-        .sign-line { display: flex; margin-bottom: 4px; }
-        .sign-label { width: 70px; font-weight: bold; }
-
-        /* 반응형 컨테이너 */
-        .responsive-container {
-            width: 100%;
-            max-width: 1200px; /* PC에서 넓게 */
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* 버튼 애니메이션 */
-        .btn-action { transition: all 0.2s; transform: scale(1); }
-        .btn-action:active { transform: scale(0.98); }
+        /* 버튼 스타일 통일 */
+        .btn-prev { background-color: #e5e7eb; color: #374151; font-weight: bold; border-radius: 8px; transition: 0.2s; }
+        .btn-prev:hover { background-color: #d1d5db; }
+        .btn-next { background-color: #2563eb; color: white; font-weight: bold; border-radius: 8px; transition: 0.2s; }
+        .btn-next:hover { background-color: #1d4ed8; }
+        
+        /* 인풋 스타일 */
+        .input-base { width: 100%; border: 1px solid #d1d5db; padding: 12px; border-radius: 8px; margin-bottom: 10px; outline: none; transition: 0.2s; }
+        .input-base:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
     </style>
 </head>
 <body>
@@ -65,10 +57,9 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useRef } = React;
+        const { useState } = React;
         const { jsPDF } = window.jspdf;
 
-        // 은행 리스트
         const BANK_LIST = [
             "KB국민", "신한", "우리", "하나", "IBK기업", "NH농협", "카카오뱅크", "토스뱅크", 
             "케이뱅크", "SC제일", "한국씨티", "우체국", "새마을금고", "수협", "신협", 
@@ -77,18 +68,12 @@
 
         function App() {
             const [step, setStep] = useState(1);
-            const [payMethod, setPayMethod] = useState(null); // 'card' or 'cash'
-            const pdfRef = useRef(null);
-
+            
             // 데이터 상태
             const [data, setData] = useState({
-                // 부동산 정보
                 address: "", buildingType: "아파트", area: "",
-                // 계약 조건
                 deposit: "", contractMoney: "", rent: "0", payDate: "매월 말일", startDate: "", endDate: "",
-                // 임대인
                 lessorName: "", lessorPhone: "", lessorId: "", lessorAddress: "", bankName: "KB국민", accountNum: "",
-                // 임차인
                 lesseeName: "", lesseePhone: "", lesseeId: "", lesseeAddress: ""
             });
 
@@ -101,242 +86,191 @@
             const goBack = () => setStep(prev => prev - 1);
 
             // ============================================
-            // 🚀 PDF 다운로드 핵심 로직 (강제 다운로드)
+            // 🚀 PDF 다운로드 (화면 밖의 숨겨진 요소를 캡처)
             // ============================================
             const handleDownloadPDF = async () => {
-                const input = document.getElementById('pdf-source-container');
+                const input = document.getElementById('hidden-pdf-template');
                 
                 try {
-                    // 1. html2canvas로 이미지 캡처 (스케일 2배로 선명하게)
-                    const canvas = await html2canvas(input, { 
-                        scale: 2,
-                        useCORS: true,
-                        logging: false
-                    });
-                    
+                    const canvas = await html2canvas(input, { scale: 2, useCORS: true, logging: false });
                     const imgData = canvas.toDataURL('image/png');
-                    
-                    // 2. jsPDF로 PDF 생성 (A4 세로)
                     const pdf = new jsPDF('p', 'mm', 'a4');
-                    const imgWidth = 210; // A4 너비 (mm)
-                    const pageHeight = 297; // A4 높이 (mm)
+                    const imgWidth = 210; 
                     const imgHeight = (canvas.height * imgWidth) / canvas.width;
                     
                     pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-                    pdf.save(`${data.lesseeName || '계약자'}_임대차계약서.pdf`);
-
-                    alert("다운로드가 시작되었습니다.\n파일을 확인해주세요.");
+                    pdf.save(`${data.lesseeName || '계약서'}_임대차계약서.pdf`);
                 } catch (error) {
-                    console.error("PDF Error:", error);
-                    alert("PDF 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+                    alert("PDF 생성 중 오류가 발생했습니다.");
                 }
             };
 
-            // 관리자 확인용 (결제 패스)
-            const handlePaymentCheck = (method) => {
-                setPayMethod(method);
-                // 0.5초 뒤 자동 넘어감
-                setTimeout(() => goNext(), 500);
+            const handlePayment = () => {
+                // 결제 버튼 누르면 바로 완료 단계로 (관리자 모드)
+                goNext();
             };
 
             return (
-                <div className="responsive-container">
+                <div className="min-h-screen flex flex-col items-center justify-center py-10 px-4">
                     
-                    {/* 상단 헤더 */}
-                    <header className="mb-8 text-center md:text-left border-b pb-4 bg-white p-6 rounded-xl shadow-sm">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">📑 전자계약 작성 시스템</h1>
-                        <p className="text-gray-500 mt-2 text-sm md:text-base">관리자 모드: 정보 입력 → 확인 → 결제 → PDF 자동 생성</p>
-                    </header>
-
-                    {/* 진행 단계 표시 (PC에선 가로로 넓게) */}
-                    <div className="flex justify-between mb-8 max-w-3xl mx-auto md:max-w-full">
-                        {['계약정보', '임차인', '미리보기', '결제', '다운로드'].map((label, idx) => (
-                            <div key={idx} className={`text-xs md:text-lg font-bold flex flex-col items-center ${step === idx + 1 ? 'text-blue-600' : 'text-gray-300'}`}>
-                                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-1 ${step === idx + 1 ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                                    {idx + 1}
-                                </div>
-                                {label}
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="bg-white p-6 md:p-10 rounded-2xl shadow-lg min-h-[500px]">
+                    {/* 메인 카드 UI (이전에 좋아하셨던 깔끔한 스타일) */}
+                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
                         
-                        {/* 1단계: 계약 정보 입력 */}
-                        {step === 1 && (
-                            <div className="animate-fade-in">
-                                <h2 className="text-xl md:text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3">부동산 및 임대인 정보</h2>
-                                
-                                {/* PC: 2단 그리드 / 모바일: 1단 */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="col-span-1 md:col-span-2">
-                                        <label className="block font-bold text-gray-700 mb-2">소재지 주소</label>
-                                        <input type="text" name="address" value={data.address} onChange={handleChange} placeholder="예: 서울시 강남구 테헤란로 123" className="w-full border p-3 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 ring-blue-200 outline-none" />
+                        {/* 상단 헤더 */}
+                        <div className="bg-blue-600 p-6 text-center">
+                            <h1 className="text-2xl font-bold text-white">전자계약 시스템</h1>
+                            <p className="text-blue-100 text-sm mt-1">STEP {step} / 5</p>
+                        </div>
+
+                        <div className="p-8">
+                            
+                            {/* STEP 1: 임대인 & 매물 정보 */}
+                            {step === 1 && (
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-800 mb-4">1. 부동산 및 임대인 정보</h2>
+                                    
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">소재지</label>
+                                    <input type="text" name="address" value={data.address} onChange={handleChange} placeholder="주소 입력" className="input-base" />
+                                    
+                                    <div className="flex gap-2">
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1">용도</label>
+                                            <input type="text" name="buildingType" value={data.buildingType} onChange={handleChange} className="input-base" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1">면적(㎡)</label>
+                                            <input type="number" name="area" value={data.area} onChange={handleChange} className="input-base" />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-50 p-3 rounded mb-4 border">
+                                        <p className="text-sm font-bold text-blue-600 mb-2">계약 조건</p>
+                                        <input type="text" name="deposit" value={data.deposit} onChange={handleChange} placeholder="보증금 (원)" className="input-base" />
+                                        <input type="text" name="contractMoney" value={data.contractMoney} onChange={handleChange} placeholder="계약금 (원)" className="input-base" />
+                                        <div className="flex gap-2">
+                                            <input type="text" name="rent" value={data.rent} onChange={handleChange} placeholder="월세" className="input-base" />
+                                            <input type="text" name="payDate" value={data.payDate} onChange={handleChange} placeholder="납부일" className="input-base" />
+                                        </div>
+                                        <div className="flex gap-2 text-sm items-center">
+                                            <input type="date" name="startDate" value={data.startDate} onChange={handleChange} className="input-base" />
+                                            ~
+                                            <input type="date" name="endDate" value={data.endDate} onChange={handleChange} className="input-base" />
+                                        </div>
+                                    </div>
+
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">임대인(주인) 정보</label>
+                                    <input type="text" name="lessorName" value={data.lessorName} onChange={handleChange} placeholder="성명" className="input-base" />
+                                    <input type="text" name="lessorPhone" value={data.lessorPhone} onChange={handleChange} placeholder="연락처" className="input-base" />
+                                    <input type="text" name="lessorId" value={data.lessorId} onChange={handleChange} placeholder="주민번호 앞자리" className="input-base" />
+                                    <input type="text" name="lessorAddress" value={data.lessorAddress} onChange={handleChange} placeholder="주소" className="input-base" />
+                                    
+                                    <div className="flex gap-2">
+                                        <select name="bankName" value={data.bankName} onChange={handleChange} className="input-base w-1/3">
+                                            {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
+                                        </select>
+                                        <input type="text" name="accountNum" value={data.accountNum} onChange={handleChange} placeholder="계좌번호" className="input-base w-2/3" />
+                                    </div>
+
+                                    <button onClick={goNext} className="btn-next w-full py-4 mt-2">다음 단계</button>
+                                </div>
+                            )}
+
+                            {/* STEP 2: 임차인 정보 */}
+                            {step === 2 && (
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-800 mb-4">2. 임차인 정보 입력</h2>
+                                    
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">성명</label>
+                                    <input type="text" name="lesseeName" value={data.lesseeName} onChange={handleChange} placeholder="홍길동" className="input-base" />
+                                    
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">연락처</label>
+                                    <input type="text" name="lesseePhone" value={data.lesseePhone} onChange={handleChange} placeholder="010-0000-0000" className="input-base" />
+                                    
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">주민등록번호</label>
+                                    <input type="text" name="lesseeId" value={data.lesseeId} onChange={handleChange} placeholder="전체 입력" className="input-base" />
+                                    
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">현 거주지 주소</label>
+                                    <input type="text" name="lesseeAddress" value={data.lesseeAddress} onChange={handleChange} placeholder="도로명 주소" className="input-base" />
+
+                                    <div className="flex gap-3 mt-6">
+                                        <button onClick={goBack} className="btn-prev w-1/3 py-3">이전</button>
+                                        <button onClick={goNext} className="btn-next w-2/3 py-3">계약서 확인</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* STEP 3: 미리보기 (화면용 간략 버전) */}
+                            {step === 3 && (
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-800 mb-2">3. 내용 확인</h2>
+                                    <p className="text-sm text-gray-500 mb-4">입력하신 내용이 맞는지 확인해주세요.</p>
+
+                                    <div className="bg-gray-100 p-4 rounded text-sm text-gray-700 h-64 overflow-y-auto mb-6 border">
+                                        <p className="font-bold">[부동산]</p>
+                                        <p>{data.address} ({data.area}㎡)</p>
+                                        <br/>
+                                        <p className="font-bold">[계약내용]</p>
+                                        <p>보증금: {data.deposit} / 월세: {data.rent}</p>
+                                        <p>기간: {data.startDate} ~ {data.endDate}</p>
+                                        <br/>
+                                        <p className="font-bold">[임대인]</p>
+                                        <p>{data.lessorName} / {data.lessorPhone}</p>
+                                        <p>계좌: {data.bankName} {data.accountNum}</p>
+                                        <br/>
+                                        <p className="font-bold">[임차인]</p>
+                                        <p>{data.lesseeName} / {data.lesseePhone}</p>
+                                    </div>
+
+                                    <div className="flex gap-3">
+                                        <button onClick={goBack} className="btn-prev w-1/3 py-3">수정</button>
+                                        <button onClick={goNext} className="btn-next w-2/3 py-3">맞습니다 (결제)</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* STEP 4: 결제 (버튼형) */}
+                            {step === 4 && (
+                                <div className="text-center">
+                                    <h2 className="text-xl font-bold text-gray-800 mb-6">4. 수수료 결제</h2>
+                                    
+                                    <div className="space-y-4 mb-6">
+                                        <button onClick={handlePayment} className="w-full p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 flex items-center justify-center gap-3 transition">
+                                            <span className="text-2xl">🏦</span>
+                                            <span className="font-bold text-gray-700">무통장 입금 확인</span>
+                                        </button>
+                                        
+                                        <button onClick={handlePayment} className="w-full p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 flex items-center justify-center gap-3 transition">
+                                            <span className="text-2xl">💳</span>
+                                            <span className="font-bold text-gray-700">카드 결제 링크 발송</span>
+                                        </button>
                                     </div>
                                     
-                                    <div>
-                                        <label className="block font-bold text-gray-700 mb-2">건물 용도</label>
-                                        <input type="text" name="buildingType" value={data.buildingType} onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50" />
-                                    </div>
-                                    <div>
-                                        <label className="block font-bold text-gray-700 mb-2">면적 (㎡)</label>
-                                        <input type="number" name="area" value={data.area} onChange={handleChange} placeholder="84.5" className="w-full border p-3 rounded-lg bg-gray-50" />
-                                    </div>
-
-                                    {/* 계약 금액 섹션 */}
-                                    <div className="col-span-1 md:col-span-2 bg-blue-50 p-6 rounded-xl border border-blue-100">
-                                        <h3 className="font-bold text-blue-800 mb-4">💰 금액 및 기간</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <input type="text" name="deposit" value={data.deposit} onChange={handleChange} placeholder="보증금 (원)" className="border p-3 rounded w-full" />
-                                            <input type="text" name="contractMoney" value={data.contractMoney} onChange={handleChange} placeholder="계약금 (원)" className="border p-3 rounded w-full" />
-                                            <input type="text" name="rent" value={data.rent} onChange={handleChange} placeholder="월세 (없으면 0)" className="border p-3 rounded w-full" />
-                                            <input type="text" name="payDate" value={data.payDate} onChange={handleChange} placeholder="납부일 (예: 매월 25일)" className="border p-3 rounded w-full" />
-                                            
-                                            <div className="md:col-span-2 flex items-center gap-2 mt-2">
-                                                <span className="font-bold text-sm">기간:</span>
-                                                <input type="date" name="startDate" value={data.startDate} onChange={handleChange} className="border p-2 rounded flex-1" />
-                                                ~
-                                                <input type="date" name="endDate" value={data.endDate} onChange={handleChange} className="border p-2 rounded flex-1" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* 임대인 정보 */}
-                                    <div className="col-span-1 md:col-span-2">
-                                        <h3 className="font-bold text-gray-800 mb-4">임대인(주인) 정보</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <input type="text" name="lessorName" value={data.lessorName} onChange={handleChange} placeholder="성명" className="border p-3 rounded-lg" />
-                                            <input type="text" name="lessorPhone" value={data.lessorPhone} onChange={handleChange} placeholder="전화번호" className="border p-3 rounded-lg" />
-                                            <input type="text" name="lessorId" value={data.lessorId} onChange={handleChange} placeholder="주민번호 앞자리" className="border p-3 rounded-lg" />
-                                            <input type="text" name="lessorAddress" value={data.lessorAddress} onChange={handleChange} placeholder="거주 주소" className="border p-3 rounded-lg" />
-                                            
-                                            <div className="md:col-span-2 flex gap-2">
-                                                <select name="bankName" value={data.bankName} onChange={handleChange} className="border p-3 rounded-lg w-1/3">
-                                                    {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
-                                                </select>
-                                                <input type="text" name="accountNum" value={data.accountNum} onChange={handleChange} placeholder="입금 받을 계좌번호" className="border p-3 rounded-lg w-2/3" />
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <button onClick={goBack} className="text-gray-400 underline text-sm">뒤로 가기</button>
                                 </div>
-                                <div className="mt-8 flex justify-end">
-                                    <button onClick={goNext} className="btn-action bg-blue-600 text-white font-bold py-4 px-10 rounded-lg text-lg w-full md:w-auto hover:bg-blue-700">다음 단계로 →</button>
-                                </div>
-                            </div>
-                        )}
+                            )}
 
-                        {/* 2단계: 임차인 정보 */}
-                        {step === 2 && (
-                            <div>
-                                <h2 className="text-xl md:text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3">임차인(세입자) 정보</h2>
-                                <p className="text-gray-500 mb-6">여기에 입력하면 모든 서류에 자동 적용됩니다.</p>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <label className="block text-sm font-bold text-gray-500 mb-1">성명</label>
-                                        <input type="text" name="lesseeName" value={data.lesseeName} onChange={handleChange} placeholder="홍길동" className="w-full bg-white border p-3 rounded text-lg font-bold" />
-                                    </div>
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <label className="block text-sm font-bold text-gray-500 mb-1">연락처</label>
-                                        <input type="text" name="lesseePhone" value={data.lesseePhone} onChange={handleChange} placeholder="010-0000-0000" className="w-full bg-white border p-3 rounded text-lg" />
-                                    </div>
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <label className="block text-sm font-bold text-gray-500 mb-1">주민등록번호</label>
-                                        <input type="text" name="lesseeId" value={data.lesseeId} onChange={handleChange} placeholder="000000-0******" className="w-full bg-white border p-3 rounded text-lg" />
-                                    </div>
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <label className="block text-sm font-bold text-gray-500 mb-1">현 주소</label>
-                                        <input type="text" name="lesseeAddress" value={data.lesseeAddress} onChange={handleChange} placeholder="도로명 주소" className="w-full bg-white border p-3 rounded text-lg" />
-                                    </div>
-                                </div>
-
-                                <div className="mt-10 flex gap-4">
-                                    <button onClick={goBack} className="btn-action bg-gray-200 text-gray-700 font-bold py-4 px-8 rounded-lg flex-1 md:flex-none md:w-40">이전</button>
-                                    <button onClick={goNext} className="btn-action bg-blue-600 text-white font-bold py-4 px-8 rounded-lg flex-2 w-full hover:bg-blue-700">미리보기 및 검토</button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 3단계: 미리보기 */}
-                        {step === 3 && (
-                            <div className="text-center">
-                                <h2 className="text-xl md:text-2xl font-bold mb-4">계약서 내용 검토</h2>
-                                <p className="text-gray-500 mb-6">아래 내용은 실제 생성될 PDF의 미리보기입니다.</p>
-
-                                {/* 미리보기용 컨테이너 (화면용으로 축소) */}
-                                <div className="border-4 border-gray-300 bg-gray-500 p-4 overflow-y-auto h-[400px] md:h-[600px] rounded-xl mb-6">
-                                    <div className="bg-white mx-auto shadow-2xl p-8 md:p-12 text-left origin-top" style={{width: '100%', maxWidth:'700px', fontSize: '10px'}}>
-                                        <h1 className="text-2xl font-bold text-center underline mb-6">부동산 임대차 계약서</h1>
-                                        <div className="font-bold mb-1 border-l-4 border-black pl-2">1. 부동산의 표시</div>
-                                        <div className="mb-4 text-xs">
-                                            {data.address} ({data.buildingType}) / 면적: {data.area}㎡
-                                        </div>
-                                        <div className="font-bold mb-1 border-l-4 border-black pl-2">2. 계약 내용</div>
-                                        <div className="mb-4 text-xs">
-                                            보증금: {data.deposit}원 / 월세: {data.rent}원 ({data.payDate})<br/>
-                                            기간: {data.startDate} ~ {data.endDate}
-                                        </div>
-                                        <div className="font-bold mb-1 border-l-4 border-black pl-2">3. 인적사항</div>
-                                        <div className="text-xs">
-                                            임대인: {data.lessorName} ({data.lessorPhone})<br/>
-                                            임차인: {data.lesseeName} ({data.lesseePhone})<br/>
-                                            입금계좌: {data.bankName} {data.accountNum}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-4 justify-center">
-                                    <button onClick={goBack} className="btn-action bg-gray-500 text-white font-bold py-4 px-8 rounded-lg">수정하기</button>
-                                    <button onClick={goNext} className="btn-action bg-blue-600 text-white font-bold py-4 px-12 rounded-lg">내용이 맞습니다 (결제)</button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 4단계: 결제 (관리자용 심플 버전) */}
-                        {step === 4 && (
-                            <div className="text-center py-10">
-                                <h2 className="text-2xl font-bold mb-8">수수료 결제 확인</h2>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                                    <button onClick={() => handlePaymentCheck('cash')} className="btn-action p-8 border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 rounded-2xl flex flex-col items-center">
-                                        <span className="text-4xl mb-4">🏦</span>
-                                        <span className="text-xl font-bold">무통장 입금 확인</span>
-                                        <span className="text-sm text-gray-400 mt-2">관리자가 입금 내역을 확인합니다</span>
+                            {/* STEP 5: 완료 (PDF 다운) */}
+                            {step === 5 && (
+                                <div className="text-center">
+                                    <div className="text-5xl mb-4">✅</div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">발급 완료!</h2>
+                                    <p className="text-gray-500 mb-8">아래 버튼을 누르면 PDF가 저장됩니다.</p>
+                                    
+                                    <button onClick={handleDownloadPDF} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-5 rounded-xl text-lg shadow-lg mb-6">
+                                        📄 계약서 PDF 다운로드
                                     </button>
-
-                                    <button onClick={() => handlePaymentCheck('card')} className="btn-action p-8 border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 rounded-2xl flex flex-col items-center">
-                                        <span className="text-4xl mb-4">💳</span>
-                                        <span className="text-xl font-bold">카드 결제 링크 발송</span>
-                                        <span className="text-sm text-gray-400 mt-2">고객에게 결제 문자를 보냅니다</span>
-                                    </button>
+                                    
+                                    <button onClick={() => window.location.reload()} className="text-gray-400 underline text-sm">처음으로</button>
                                 </div>
-                                <div className="mt-8">
-                                    <button onClick={goBack} className="text-gray-400 underline">다시 돌아가기</button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 5단계: 완료 및 다운로드 */}
-                        {step === 5 && (
-                            <div className="text-center py-10">
-                                <div className="text-6xl mb-6">✅</div>
-                                <h2 className="text-3xl font-bold mb-4">모든 준비가 완료되었습니다!</h2>
-                                <p className="text-gray-600 mb-10 text-lg">아래 버튼을 누르면 전자계약서(PDF)가 즉시 다운로드됩니다.</p>
-                                
-                                <button onClick={handleDownloadPDF} className="btn-action w-full max-w-lg mx-auto bg-green-600 hover:bg-green-700 text-white font-bold py-6 rounded-xl shadow-xl text-xl flex items-center justify-center gap-3">
-                                    📄 PDF 계약서 다운로드
-                                </button>
-                                
-                                <p className="mt-4 text-sm text-gray-400">다운로드 된 파일을 열어 서명을 확인하세요.</p>
-                                <button onClick={() => window.location.reload()} className="mt-8 text-gray-400 underline">처음으로</button>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
 
-                    {/* ======================================================= */}
-                    {/* (중요) 실제 PDF로 변환되는 숨겨진 영역 (A4 고정 크기)  */}
-                    {/* ======================================================= */}
-                    <div id="pdf-source-container">
+                    {/* #################################################
+                      [숨겨진 PDF 원본] 사용자 눈에는 절대 안 보임 (left: -5000px)
+                      #################################################
+                    */}
+                    <div id="hidden-pdf-template">
                         <h1 className="doc-title">부동산 임대차 계약서</h1>
                         
                         <div className="doc-section">1. 부동산의 표시</div>
@@ -361,7 +295,7 @@
                         </table>
 
                         <div className="doc-section">3. 계약 조항</div>
-                        <div className="doc-text" style={{border: '1px solid #ddd', padding: '10px', fontSize: '9pt'}}>
+                        <div className="doc-text" style={{border: '1px solid #ddd', padding: '15px', fontSize: '10pt'}}>
                             <strong>제2조 (존속기간)</strong> 임대인은 임대차기간 만료 전 6월부터 1월까지 사이에 갱신거절의 통지를 하지 아니한 경우 묵시적 갱신된 것으로 본다.<br/>
                             <strong>제3조 (용도변경 및 전대 등)</strong> 임차인은 임대인의 동의 없이 용도나 구조를 변경하거나 전대할 수 없다.<br/>
                             <strong>제4조 (계약의 해지)</strong> 차임을 2기 이상 연체하거나 제3조를 위반한 경우 계약을 해지할 수 있다.<br/>
@@ -370,30 +304,28 @@
                         </div>
 
                         <div className="doc-section">4. 인적사항 및 서명</div>
-                        <div className="sign-area">
-                            <div className="sign-row">
-                                <div className="sign-box">
-                                    <div style={{fontWeight:'bold', marginBottom:'5px'}}>[임대인]</div>
-                                    <div className="sign-line"><span className="sign-label">주소</span><span>{data.lessorAddress}</span></div>
-                                    <div className="sign-line"><span className="sign-label">주민등록</span><span>{data.lessorId}</span></div>
-                                    <div className="sign-line"><span className="sign-label">전화</span><span>{data.lessorPhone}</span></div>
-                                    <div className="sign-line"><span className="sign-label">성명</span><span>{data.lessorName} (인)</span></div>
-                                    <div style={{marginTop:'10px', backgroundColor:'#eee', padding:'5px', fontSize:'9pt'}}>
-                                        <strong>입금계좌:</strong> {data.bankName} {data.accountNum}
-                                    </div>
+                        <div style={{display:'flex', gap:'20px', marginTop:'20px', borderTop:'2px solid black', paddingTop:'20px'}}>
+                            <div style={{flex:1, border:'1px solid #ccc', padding:'15px'}}>
+                                <div style={{fontWeight:'bold', marginBottom:'10px', fontSize:'12pt'}}>[임대인]</div>
+                                <div style={{marginBottom:'5px'}}><span style={{fontWeight:'bold', width:'60px', display:'inline-block'}}>주소:</span> {data.lessorAddress}</div>
+                                <div style={{marginBottom:'5px'}}><span style={{fontWeight:'bold', width:'60px', display:'inline-block'}}>주민:</span> {data.lessorId}</div>
+                                <div style={{marginBottom:'5px'}}><span style={{fontWeight:'bold', width:'60px', display:'inline-block'}}>전화:</span> {data.lessorPhone}</div>
+                                <div style={{marginBottom:'5px'}}><span style={{fontWeight:'bold', width:'60px', display:'inline-block'}}>성명:</span> {data.lessorName} (인)</div>
+                                <div style={{marginTop:'10px', background:'#eee', padding:'5px', fontSize:'10pt'}}>
+                                    <strong>계좌:</strong> {data.bankName} {data.accountNum}
                                 </div>
-                                <div className="sign-box">
-                                    <div style={{fontWeight:'bold', marginBottom:'5px'}}>[임차인]</div>
-                                    <div className="sign-line"><span className="sign-label">주소</span><span>{data.lesseeAddress}</span></div>
-                                    <div className="sign-line"><span className="sign-label">주민등록</span><span>{data.lesseeId}</span></div>
-                                    <div className="sign-line"><span className="sign-label">전화</span><span>{data.lesseePhone}</span></div>
-                                    <div className="sign-line"><span className="sign-label">성명</span><span>{data.lesseeName} (인)</span></div>
-                                </div>
+                            </div>
+                            <div style={{flex:1, border:'1px solid #ccc', padding:'15px'}}>
+                                <div style={{fontWeight:'bold', marginBottom:'10px', fontSize:'12pt'}}>[임차인]</div>
+                                <div style={{marginBottom:'5px'}}><span style={{fontWeight:'bold', width:'60px', display:'inline-block'}}>주소:</span> {data.lesseeAddress}</div>
+                                <div style={{marginBottom:'5px'}}><span style={{fontWeight:'bold', width:'60px', display:'inline-block'}}>주민:</span> {data.lesseeId}</div>
+                                <div style={{marginBottom:'5px'}}><span style={{fontWeight:'bold', width:'60px', display:'inline-block'}}>전화:</span> {data.lesseePhone}</div>
+                                <div style={{marginBottom:'5px'}}><span style={{fontWeight:'bold', width:'60px', display:'inline-block'}}>성명:</span> {data.lesseeName} (인)</div>
                             </div>
                         </div>
 
-                        <div style={{textAlign:'center', marginTop:'50px'}}>
-                            <div style={{fontSize:'12pt', marginBottom:'10px'}}>작성일자: {new Date().toLocaleDateString()}</div>
+                        <div style={{textAlign:'center', marginTop:'60px', fontSize:'12pt'}}>
+                            작성일자: {new Date().toLocaleDateString()}
                         </div>
                     </div>
 
