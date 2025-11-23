@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 홈페이지 & PDF</title>
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
+        .container { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 500px; }
+        
+        /* PDF로 저장될 카드 영역 */
+        .card {
+            background: white;
+            width: 100%;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .header { padding-bottom: 15px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
+        .header h1 { font-size: 22px; margin: 0 0 5px 0; color: #222; }
+        .header .category { color: #8e8e8e; font-size: 13px; }
+
+        .info-row { display: flex; margin-bottom: 15px; align-items: flex-start; }
+        .icon { width: 20px; margin-right: 10px; text-align: center; font-size: 18px; }
+        .text-content h3 { margin: 0 0 4px 0; font-size: 15px; color: #333; }
+        .text-content p { margin: 0; font-size: 14px; color: #666; line-height: 1.5; }
+        
+        .naver-green { color: #03c75a; font-weight: bold; }
+
+        /* 저장 버튼 */
+        .save-btn {
+            background-color: #03c75a;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(3, 199, 90, 0.2);
+        }
+        .save-btn:hover { background-color: #02b150; }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+        const { jsPDF } = window.jspdf;
+
+        function App() {
+            const contentRef = useRef(null);
+
+            const handleDownloadPdf = async () => {
+                const element = contentRef.current;
+                if (!element) return;
+
+                // 화면 캡처 (html2canvas)
+                const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                const imgData = canvas.toDataURL('image/png');
+
+                // PDF 생성 (jsPDF)
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                // 이미지 높이가 A4보다 길면 잘릴 수 있으므로 비율 조정 필요 시 추가 로직 가능
+                // 여기서는 간단하게 한 장에 넣음
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save('portfolio_card.pdf');
+            };
+
+            return (
+                <div className="container">
+                    {/* 여기가 PDF로 변환되는 영역 */}
+                    <div className="card" ref={contentRef}>
+                        <div className="header">
+                            <h1>Young0i의 포트폴리오</h1>
+                            <span className="category">웹 개발자 / React & PDF 프로젝트</span>
+                        </div>
+
+                        <div className="info-row">
+                            <div className="icon">📍</div>
+                            <div className="text-content">
+                                <h3>위치</h3>
+                                <p>서울시 GitHub구 Pages동</p>
+                            </div>
+                        </div>
+
+                        <div className="info-row">
+                            <div className="icon">🕒</div>
+                            <div className="text-content">
+                                <h3>영업 시간</h3>
+                                <p>24시간 <span className="naver-green">영업 중</span></p>
+                            </div>
+                        </div>
+
+                        <div className="info-row">
+                            <div className="icon">📞</div>
+                            <div className="text-content">
+                                <h3>연락처</h3>
+                                <p>010-1234-5678</p>
+                            </div>
+                        </div>
+
+                        <div className="info-row">
+                            <div className="icon">📝</div>
+                            <div className="text-content">
+                                <h3>소개</h3>
+                                <p>
+                                    이 페이지는 React와 CDN 방식으로 만들어졌습니다.<br/>
+                                    하단 버튼을 누르면 이 카드 영역이<br/>
+                                    깔끔하게 <strong>PDF로 저장</strong>됩니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button className="save-btn" onClick={handleDownloadPdf}>
+                        PDF로 저장하기
+                    </button>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
